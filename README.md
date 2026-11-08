@@ -1,267 +1,270 @@
-# TAPE — ciągła pamięć nagrań
+# TAPE
 
-Appka na Maca, która nagrywa głos i **nigdy nie zapomina**: jeden rosnący zapis,
-po którym chodzi się jak po taśmie. Bez plików do otwierania, bez kosza, bez
-nadpisywania.
+[![ci](https://github.com/worotyns/tape/actions/workflows/ci.yml/badge.svg)](https://github.com/worotyns/tape/actions/workflows/ci.yml)
 
-**Bez okna głównego**: ikona w pasku systemu pokazuje stan, a interfejs to
-globalne skróty i dźwięk. Jedyne okno to Preferencje, otwierane z menu w pasku.
+A recorder that never forgets. TAPE captures voice from the menu bar, and keeps
+it as **continuous tape memory** rather than a folder of files: one growing line
+that only ever gets written to, where every point you marked is somewhere you can
+come back to.
 
-Do codziennego użytku wystarczą trzy gesty:
+It has no main window. The icon in the menu bar is the display, the interface is
+global shortcuts and sound, and the only window is Preferences. Nothing is ever
+deleted, overwritten, or renamed out from under you.
 
-- **`⌃⌥R`** — nagrywaj / stop.
-- **`⌃⌥M`** — zaznacz moment. W trakcie nagrywania stawia marker; poza nim
-  cofa taśmę o ~2,5 s i odsłuchuje.
-- **`⌃⌥↑` / `⌃⌥↓`** — idź po cue. Kursor od razu gra to, na co trafił.
+## What it does
 
-## Koncept: ciągła pamięć
+Three gestures cover daily use:
 
-Nagranie nie jest plikiem, który się otwiera, zapisuje i zamyka. Jest **taśmą**,
-która się tylko dopisuje. Jedna linia: start, potem każdy zaznaczony moment,
-potem znowu start, dalej. Nie ma listy plików, nie ma folderów do przeklikiwania
-i nie ma kosza.
+- **`⌃⌥R`** — start / stop recording.
+- **`⌃⌥M`** — mark this moment. While recording it drops a marker; while not
+  recording it spools the tape back ~2.5 s and plays it, so you can hear again
+  what just went past.
+- **`⌃⌥↑` / `⌃⌥↓`** — walk the cues. Moving the cursor plays what it lands on.
+
+## The concept: continuous tape memory
+
+A recording is not a file you open, save and close. It is **tape**: a line that
+is only ever appended to. A start, then every moment you marked, then another
+start, and on. There is no file list, no folder tree to click through, and no
+trash.
 
 ```
 ●━━━━━━━⚑━━━━━━⚑━━━━━━━●━━━━━━⚑━━━━━━━●
 
-●  start nagrania        ⚑  marker MEM
+●  recording start       ⚑  marker (MEM)
 ```
 
-Całą strukturą archiwum jest ta jedna linia. **Cue** to każdy jej punkt: start
-nagrania i każdy marker MEM. Kursor chodzi po cue, a nie po plikach — i to jest
-cała nawigacja. Stąd wynikają wszystkie decyzje w appce, także te, które na
-pierwszy rzut oka wyglądają na brak funkcji:
+That single line is the entire structure of the archive. A **cue** is any point
+on it — a recording start or a marker — and the cursor walks cues instead of
+files. Everything else in the app follows from that, including the things that
+look like missing features:
 
-1. **Taśma tylko rośnie.** Nie ma delete, nie ma nadpisywania, nie ma „zapisz
-   jako”. Nagranie, które raz powstało, zostaje — i to jest funkcja, nie
-   zaległość.
-2. **Zapis jest append-only i naprawialny.** Metadane lądują przez `.tmp` +
-   `F_FULLFSYNC` + atomowy `rename`, a każdy marker trafia do dziennika
-   zdarzeń. Jeśli proces padnie w środku nagrania, `recover()` odtworzy je
-   z rozmiaru pliku i z dziennika — i jest idempotentny, więc wolno go puścić
-   dwa razy.
-3. **Ruch kursora to odsłuch.** Przesunięcie kursora nie „wybiera” pozycji —
-   od razu ją gra. Momentu w nagraniu szukasz więc słuchem, nie wzrokiem.
-4. **MEM to przewijanie taśmy.** MEM nie ma własnej akcji nawigacyjnej (nie
-   duplikuje kursora), przez co jest wolny i służy jako modyfikator precyzji:
-   przytrzymany kręci o kilka sekund w obrębie nagrania, a poza nagrywaniem
-   cofa 2,5 s — jak cofnięcie taśmy kciukiem, żeby usłyszeć to jeszcze raz.
-5. **Głowica parkuje na tym, co nagrałeś.** Po stopie kursor zostaje na świeżym
-   nagraniu, a nie na starym. Kursor pamięta też pozycję między uruchomieniami —
-   po tożsamości cue, nie indeksie, więc dopisanie nowych nagrań go nie przesuwa.
-6. **Taśma żyje w jednym folderze.** Całe archiwum to `manifest.json` +
-   dziennik zdarzeń + WAV-y; nic więcej nie trzeba trzymać w głowie. Format jest
-   wersjonowany, markery siedzą na offsetach w próbkach (nie na zegarze), a dwie
-   kopie appki nie zniszczą archiwum, bo pisze tylko jedna naraz (`flock`).
+1. **The tape only grows.** There is no delete, no overwrite, no "save as". A
+   recording that exists, exists. This is a property, not a backlog item.
+2. **The write is append-only and repairable.** Metadata lands through `.tmp` +
+   `F_FULLFSYNC` + atomic `rename`, and every marker is also written to an event
+   log. If the process dies mid-recording, `recover()` reconstructs it from the
+   file length and the log — and it is idempotent, so running it twice is fine.
+3. **Moving the cursor auditions.** It does not select a point and wait for
+   play; it plays immediately. You find a moment in a recording by ear, not by
+   eye.
+4. **MEM spools the tape.** MEM carries no navigation of its own (it does not
+   duplicate the cursor), which leaves it free to be a precision modifier: held
+   down it scrubs seconds within a recording, and outside recording it rewinds
+   2.5 s — the way you would push tape back with a thumb to hear something
+   again.
+5. **The head parks on what you just recorded.** After stopping, the cursor sits
+   on the fresh recording, not the old one. It also remembers its position
+   across launches, keyed by cue identity rather than index, so appending new
+   recordings never shifts it.
+6. **The tape is one folder of plain files.** The whole archive is
+   `manifest.json` + an event log + WAVs. The format is versioned, markers are
+   stored as sample offsets (not wall-clock times), and two copies of the app
+   cannot corrupt it: only one writes at a time, guarded by `flock`.
 
-## Instalacja
+## Requirements
 
-```bash
-./scripts/install.sh          # buduje i instaluje do /Applications
+- macOS 13 or later.
+- To build: Xcode or the command line tools (Swift 5.9 or later). There are no
+  package dependencies.
+
+## Install
+
+### From a release
+
+Download the latest `Tape-x.y.dmg`, open it and drag **Tape.app** onto
+Applications.
+
+The build is ad-hoc signed rather than notarized, so a copy that arrived as a
+download carries a quarantine flag and Gatekeeper refuses the first launch.
+Right-click the app and choose *Open*, or clear the flag once:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Tape.app
 ```
 
-Albo **bez terminala:** dwuklik na `Install TAPE.command` w Finderze.
+macOS will then ask twice: for access to your Documents folder (the archive
+lives in `~/Documents/TAPE`) and for the microphone, on your first recording.
+The app deliberately does not prompt for the microphone at launch — a recorder
+should ask when you record, not while you are working.
 
-Po instalacji TAPE jest zwykłą appką: uruchamiasz ją z Findera, Spotlighcie
-albo Launchpada. Nie ma ikony w Docku (jest akcesorium, `LSUIElement`) i nigdy
-nie przejmuje focusu — zamyka się z własnego menu w pasku.
+### From source
 
-| Flaga | Efekt |
+```sh
+./scripts/install.sh          # build and install to /Applications
+```
+
+Or, without a terminal: double-click **Install TAPE.command** in Finder.
+
+Either way TAPE behaves like any other Mac app afterwards — launch it from
+Finder, Spotlight or Launchpad. It has no Dock icon (it is an accessory,
+`LSUIElement`) and never steals focus; you quit it from its own menu in the
+menu bar.
+
+| Flag | Effect |
 |---|---|
-| `--user` | instaluje do `~/Applications` zamiast do `/Applications` |
-| `--login` | dodaje `LaunchAgent`, żeby startowała przy logowaniu |
-| `--dmg` | buduje `dist/TAPE-0.1.dmg` (przeciągnij-do-Applications) |
-| `--no-launch` | instaluje bez uruchamiania |
-| `--uninstall` | usuwa appkę i login item |
+| `--user` | install to `~/Applications` instead of `/Applications` |
+| `--login` | add a `LaunchAgent` so it starts at login |
+| `--dmg` | also build `dist/Tape-0.1.dmg` (drag-to-Applications) |
+| `--no-launch` | install without launching |
+| `--uninstall` | remove the app and the login item |
 
-`--uninstall` **nie rusza nagrań** — one żyją w `~/Documents/TAPE` i nic ich nie
-kasuje, ani instalacja, ani odinstalowanie.
+`--uninstall` **does not touch recordings** — they live in `~/Documents/TAPE`,
+and neither installing nor uninstalling ever deletes one.
 
-### Aktualizacja z TABULA
+### Running from the build directory
 
-Appka nazywała się TABULA. Pod nową nazwą dwie rzeczy przechodzą same
-(`Sources/Tape/Rename.swift` to jedyne miejsce w kodzie, które zna starą nazwę):
-
-- **archiwum**: `~/Documents/TABULA` → `~/Documents/TAPE`. To `mv`, nie
-  kopiowanie i nie kasowanie — albo całe, albo wcale — i tylko domyślna
-  lokalizacja, bo archiwum wskazane ręcznie gdzie indziej zostaje na miejscu.
-  Robi to instalator (powłoka ma już dostęp do Dokumentów), a appka próbuje
-  tego sama, gdyby ktoś aktualizował bez instalatora. Gdy przeniesienie się nie
-  uda, appka czyta dalej stary folder, zamiast założyć obok pusty nowy,
-- **ustawienia** ze starej domeny preferencji (ścieżka archiwum, wzmocnienie,
-  skróty) są przepisywane do nowej, raz. Zapamiętana ścieżka wskazująca na
-  `…/TABULA` jest poprawiana, a gdy folderu nie ma z innego powodu — kasowana,
-  żeby appka nie odtworzyła pustego archiwum w losowym miejscu.
-
-Instalator sprząta też starą appkę i jej login item — inaczej zostałby w pasku
-drugi punkcik i wpis startujący ścieżkę, której już nie ma.
-
-Koszt: identyfikator bundla się zmienił, więc macOS traktuje TAPE jako nową
-appkę i **raz** zapyta ponownie — o dostęp do folderu Dokumenty (tam jest
-archiwum) i o mikrofon przy pierwszym nagraniu. Nagrania i skróty zostają.
-Dopóki dostęp do Dokumentów nie jest przyznany, kropka miga na czerwono (błąd),
-a appka próbuje otworzyć archiwum co 2 s — po „Allow” wraca sama, bez restartu.
-
-```bash
-./scripts/run.sh              # build release + .app + launch
-./scripts/run.sh --log        # w pierwszym planie, widać stderr
+```sh
+./scripts/run.sh              # release build + .app + launch
+./scripts/run.sh --log        # foreground, stderr visible
 ```
 
-`.app` jest obowiązkowe, nie kosmetyczne: TCC czyta
-`NSMicrophoneUsageDescription` z `Info.plist`, więc gołe `swift run` dostaje
-odmowę dostępu do mikrofonu **bez żadnego pytania**.
+The `.app` is required, not cosmetic: TCC reads
+`NSMicrophoneUsageDescription` from `Info.plist`, so a bare `swift run` is
+denied microphone access **without even being asked**.
 
-### Zgoda na mikrofon przy aktualizacjach
+### Microphone permission across updates
 
-macOS wiąże zgodę na mikrofon z sygnaturą kodu. Przy podpisie ad-hoc każdy
-rebuild to nowy cdhash, więc TCC pyta ponownie (albo po cichu odmawia — co jest
-gorsze). Instalator ostrzega, gdy update zmieni sygnaturę. Stała tożsamość
-usuwa problem na zawsze:
+macOS ties microphone consent to the code signature. Under an ad-hoc signature
+every rebuild is a new cdhash, so TCC asks again — or, worse, denies silently.
+A stable identity removes the problem permanently: create a self-signed code
+signing certificate in Keychain Access, then
 
-1. Keychain Access › Certificate Assistant › Create a Certificate
-2. nazwa `TAPE Dev`, Identity Type `Self Signed Root`, Certificate Type `Code Signing`
-3. `TAPE_SIGN_IDENTITY="TAPE Dev" ./scripts/install.sh`
+```sh
+TAPE_SIGN_IDENTITY="TAPE Dev" ./scripts/install.sh
+```
 
-Alternatywnie darmowy certyfikat „Apple Development" z Xcode (personal team).
+The installer warns when an update would change the signature.
 
-## Skróty
+## Shortcuts
 
-Wszystkie skróty są edytowalne: **menu w pasku → Preferencje… → Global
-shortcuts**. Poniżej wartości domyślne.
+Every shortcut is editable: **menu bar → Preferences… → Global shortcuts**. The
+defaults:
 
-| Skrót | Akcja |
+| Shortcut | Action |
 |---|---|
-| `⌃⌥R` | nagrywanie on/off (przy pierwszym razie poprosi o mikrofon) |
-| `⌃⌥M` | **podczas nagrywania:** marker · **poza:** cofnij 2,5 s i odsłuchaj |
-| `⌃⌥↑` albo `⌃⌥←` | poprzedni cue (z odsłuchem) |
-| `⌃⌥↓` albo `⌃⌥→` | następny cue (z odsłuchem) |
-| `⌃⌥⇧↑` / `⌃⌥⇧↓` | drobne przewijanie ∓5 s (w obrębie nagrania) |
-| `⌃⌥⏎` | play / pause w bieżącym miejscu |
-| `⌃⌥H` | „gdzie jestem" — wysokość tonu = pozycja w archiwum |
+| `⌃⌥R` | recording on/off (asks for the microphone the first time) |
+| `⌃⌥M` | **while recording:** marker · **while not:** rewind 2.5 s and play |
+| `⌃⌥↑` or `⌃⌥←` | previous cue (auditioned) |
+| `⌃⌥↓` or `⌃⌥→` | next cue (auditioned) |
+| `⌃⌥⇧↑` / `⌃⌥⇧↓` | scrub ∓5 s within the current recording |
+| `⌃⌥⏎` | play / pause at the cursor |
+| `⌃⌥H` | "where am I" — the pitch of the tone encodes position in the archive |
 
-**Cue na obu osiach.** Pierwsza wersja dawała cue na `←`/`→`, a scrub na
-`↑`/`↓` — co było błędem, bo ręka sama sięga po strzałki w pionie, więc pion
-jest naturalną osią. Teraz dowolna strzałka chodzi po cue: w górę i w lewo do
-tyłu, w dół i w prawo do przodu. `Shift` to ta sama oś o ziarno drobniej:
-przewijanie w bieżącym nagraniu.
+**Cues on both axes.** Any arrow walks cues: up and left go back, down and right
+go forward. `Shift` is the same axis at a finer grain — scrubbing inside the
+current recording.
 
-### Trzy rzeczy, które sprawiają, że nawigacja "nie działa"
+**The ends of the archive are audible.** At the first cue `⌃⌥↑` used to do
+nothing at all: no sound, no blink, indistinguishable from a broken app. Both
+ends now have their own low blip, once per hold rather than on repeat.
 
-1. **Ściana była cicha.** Na pierwszym cue `⌃⌥↑` nie robiło *nic* — żadnego
-   dźwięku, żadnego mignięcia. Nie do odróżnienia od zepsutej appki. Teraz końce
-   archiwum mają własny, niski blip (raz na przytrzymanie, nie w kółko).
-2. **Kursor startował od zera po każdym uruchomieniu.** Pozycja jest teraz
-   zapamiętana (po tożsamości cue, nie indeksie — przeżywa dopisanie nowych nagrań).
-3. **Po nagraniu kursor zostawał na starym klipie.** Teraz parkuje na tym, co
-   właśnie nagrałeś — jak głowica magnetofonu. Wcześniej po `⌃⌥R`/stopie pierwsze
-   naciśnięcie `⌃⌥↓` odtwarzało stary klip i wyglądało jak zepsuta nawigacja.
+The cue map can be inspected without the GUI: `Tape --inspect` prints the whole
+list in order.
 
-Mapa cue jest do podejrzenia bez GUI: `Tape --inspect` wypisuje całą listę w
-kolejności.
+Global shortcuts go through Carbon's `RegisterEventHotKey`, which needs **no**
+Accessibility permission and **consumes** the key. `NSEvent.addGlobalMonitorForEvents`
+would require Accessibility and would let the key through to the focused app —
+so every shortcut would also type itself wherever you happen to be writing.
 
-Globalne skróty rejestruje Carbon `RegisterEventHotKey`: **nie wymaga**
-uprawnienia Accessibility i **połyka** klawisz. `NSEvent.addGlobalMonitorForEvents`
-wymagałby Accessibility i przepuszczałby klawisz do aplikacji z focusem — czyli
-każdy skrót wpisywałby się jako znak tam, gdzie akurat piszesz.
+## Preferences
 
-## Preferencje
+The menu bar menu is only the status line, **Preferences…** and **Quit**:
+navigating the archive belongs to the shortcuts, so the menu does not carry a
+second, drifting copy of it. Preferences hold what used to be submenus:
 
-Menu w pasku to tylko linia stanu, **Preferencje…** i **Quit** — całe poruszanie
-się po archiwum należy do skrótów, więc w menu nie ma drugiej, rozjeżdżającej się
-z nimi nawigacji. Preferencje zbierają to, co wcześniej było podmenu:
+- **Global shortcuts** — click a shortcut and press the new keys; `Esc` cancels,
+  `+` adds an alternative, `×` removes one. While a shortcut is being recorded,
+  the global ones are temporarily unregistered, otherwise Carbon would swallow
+  the very combination you are pressing. Conflicts are rejected with a message.
+- **Launch TAPE at login** — the same `LaunchAgent` that `install.sh --login`
+  writes, so the checkbox and the installer cannot disagree.
+- **Archive** — the archive path, "Open recording folder" and "Change…".
+- **Microphone** — input gain and a level preview.
 
-- **Global shortcuts** — kliknij skrót i naciśnij nowe klawisze; `Esc` anuluje,
-  `+` dodaje alternatywę, `×` usuwa. Na czas nagrywania skrótu globalne skróty są
-  chwilowo wyrejestrowane, inaczej Carbon połknąłby właśnie wciskaną kombinację.
-  Kolizje są odrzucane z komunikatem.
-- **Launch TAPE at login** — ta sama `LaunchAgent`, którą pisze
-  `install.sh --login`, więc checkbox i instalator nie mogą się rozjechać.
-- **Archive** — ścieżka archiwum, „Open recording folder” i „Change…”.
-- **Microphone** — wzmocnienie i podgląd poziomu.
-- Trzy linijki pomocy, które wcześniej siedziały w menu.
+## The icon is the only display
 
-## Ikona pokazuje stan
+A single dot in the menu bar carries the state:
 
-Jedynym „ekranem" appki jest kropka w pasku systemu. Kolor mówi, co się dzieje:
-
-| Kolor | Tryb | Znaczenie |
+| Colour | Mode | Meaning |
 |---|---|---|
-| czerwony | stały | nagrywanie |
-| czerwony | miga | błąd (np. brak mikrofonu) |
-| zielony | stały / miga | odtwarzanie / pauza |
-| cyjan | błysk 250 ms | detent — przeskok między cue |
-| magenta | błysk 250 ms | drobny scrub |
-| szary | przygaszony | bezczynność |
+| red | steady | recording |
+| red | blinking | error (no microphone, archive unreachable) |
+| green | steady / blinking | playing / paused |
+| cyan | 250 ms flash | detent — a jump between cues |
+| magenta | 250 ms flash | fine scrub |
+| grey | dim | idle |
 
-Kropka jest rysowana jako nietemplate'owy `NSImage` z ciemnym obrysem, żeby
-czytała się i na jasnym, i na ciemnym pasku. Pulsowanie animuje pętla 20 Hz.
+The dot is drawn as a non-template `NSImage` with a dark outline so it reads on
+both light and dark menu bars. The 20 Hz tick loop animates the pulsing, so
+there is no second timer.
 
-Ta sama kropka jest **ikoną appki** — powiększona i osadzona na płaskim
-grafitowym korpusie (`scripts/make-icon.swift`). Płaska do końca: bez gradientu,
-bez cienia, bez fazowania i bez poświaty. Zostają dwie decyzje — kolor i rozmiar
-kropki — i obie przeżywają skalowanie do 16 px w Finderze, bo ikona jest
-rysowana wektorowo w każdym rozmiarze, a nie pomniejszana z 1024 px. Czerwień
-trafiła na ikonę, bo jako jedyna ma stan stały — nagrywanie; migająca czerwień to
-błąd, a pozostałe kolory żyją wyłącznie w pasku. Ikona pokazuje się w Finderze,
-na dysku z `--dmg` i w Get Info; `.icns` nie jest w repo, bo dorysowuje go
-`make-app.sh`.
+An archive that cannot be opened is a **blinking red dot**, not a grey one, and
+the app retries every two seconds instead of giving up until the next launch.
 
-## Taśma na dysku
+The same dot is the **app icon**, enlarged onto a flat graphite plate
+(`scripts/make-icon.swift`). Flat throughout: no gradient, no shadow, no bevel,
+no glow — two decisions, colour and dot size, both of which survive being scaled
+to 16 px in a Finder list, because the icon is drawn as vectors at each size
+rather than downsampled from 1024 px. Red is on the icon because it is the only
+steady state; green, cyan and magenta live only in the menu bar. The `.icns` is
+not in the repository — `make-app.sh` draws it.
 
-Domyślnie `~/Documents/TAPE/` (albo inna ścieżka wskazana z menu — wtedy
-zapamiętana). Archiwum to zwykłe pliki, które przeżyją appkę:
+## The archive on disk
+
+`~/Documents/TAPE/` by default, or any other path chosen in Preferences → Archive
+(remembered). The archive is ordinary files that outlive the app:
 
 ```
 TAPE/
-  manifest.json                 # formatVersion, cardId (tożsamość archiwum), nextSeq
-  events.jsonl                  # dziennik zdarzeń, append-only
+  manifest.json                 # formatVersion, cardId (archive identity), nextSeq
+  events.jsonl                  # append-only event log
   recordings/rec_000001.wav     # PCM mono 16 kHz s16le
-  metadata/rec_000001.json      # czas trwania, markery (offsety w próbkach)
+  metadata/rec_000001.json      # duration, markers (sample offsets)
 ```
 
-Format jest wersjonowany: archiwum zapisane nowszą wersją jest odrzucane
-z komunikatem, a nie zgadywane. Preferencje → **Archive → „Change…”** pozwalają
-wskazać inną ścieżkę (zapisywaną w preferencjach). Do jednorazowego testu bez
-zapisu służy flaga:
+The format is versioned: an archive written by a newer version is refused with a
+message rather than guessed at. For a one-off test without touching your real
+archive:
 
-```bash
+```sh
 .build/Tape.app/Contents/MacOS/Tape -libraryPath /tmp/tape-test
 ```
 
-## Trwałość — co jest sprawdzone
+## Durability: what is actually tested
 
-| Właściwość | Jak |
+| Property | How |
 |---|---|
-| proces zabity w trakcie zapisu | nagłówek WAV pisany na końcu, `recover()` liczy długość z rozmiaru pliku |
-| **markery przeżywają kill** | dziennik zdarzeń ma każdy `MARKER_ADDED`, recovery je odtwarza |
-| metadane nigdy nie są połowiczne | zapis do `.tmp` + `F_FULLFSYNC` + atomowy `rename` |
-| recovery jest idempotentne | fakt odzyskania trafia jako `RECORDING_FINALIZED` do dziennika |
-| uszkodzone metadane nie trują archiwum | plik idzie do kwarantanny `.corrupt` |
-| nic nie kasuje nagrania | brak delete; markery przycięte do naprawionej długości, nie odwrotnie |
-| dwie kopie appki nie zniszczą archiwum | `flock` na `<archiwum>/.lock`, jedna pisząca na raz |
+| process killed mid-write | the WAV header is written last, `recover()` takes the length from the file size |
+| **markers survive a kill** | the event log holds every `MARKER_ADDED`, recovery replays them |
+| metadata is never half-written | `.tmp` + `F_FULLFSYNC` + atomic `rename` |
+| recovery is idempotent | the fact of recovery is itself logged as `RECORDING_FINALIZED` |
+| corrupt metadata cannot poison the archive | the file is quarantined as `.corrupt` |
+| nothing deletes a recording | there is no delete path; markers are trimmed to the repaired length, never the reverse |
+| two copies of the app cannot destroy the archive | `flock` on `<archive>/.lock`, one writer at a time |
 
-Ostatni punkt ma znaczenie dopiero po instalacji: `open` na ten sam bundle
-odtworzy działającą instancję, ale **zainstalowana appka i świeżo zbudowana to
-dwa różne bundle**. Bez blokady obie przeczytałyby ten sam `nextSeq` i obie
-utworzyły `rec_000006.wav` — a otwarcie pliku go truncate'uje, więc pierwsze
-nagranie przepada. Blokada jest doradcza (`flock`), więc system zwalnia ją sam
-po zabiciu procesu — nie ma martwego locka po crashu.
+That last one matters only after installation: `open` reuses a running instance
+of the *same* bundle, but the installed app and a freshly built one are two
+different bundles. Without the lock both would read the same `nextSeq` and both
+would create `rec_000006.wav` — and opening a file truncates it, so the first
+recording is lost. The lock is advisory (`flock`), so the system releases it when
+the process is killed; there is no stale lock after a crash.
 
-## Weryfikacja
+## Verification
 
-```bash
-swift test                          # 37 testów domeny i skrótów, headless
+```sh
+swift test                          # 37 domain and shortcut tests, headless
 ./scripts/run.sh --no-open
 BIN="$(swift build -c release --show-bin-path)/Tape"
-"$BIN" --selftest                   # potok end-to-end prawdziwym binarium
-"$BIN" --inspect                    # co jest w archiwum (domyślnie ~/Documents/TAPE)
+"$BIN" --selftest                   # end-to-end pipeline, real binary
+"$BIN" --inspect                    # what is in the archive (default ~/Documents/TAPE)
 ```
 
-`--selftest` przechodzi cały potok: nagranie → marker → zabity proces w trakcie
-zapisu → recovery → odbudowa cue → przewinięcie MEM, plus sprawdzenie, że
-zapisany WAV jest czytelny dla CoreAudio i zawiera realny dźwięk.
+`--selftest` walks the whole pipeline: record → mark → kill the process mid-write
+→ recover → rebuild cues → spool back with MEM, and checks that the written WAV
+is readable by CoreAudio and contains actual sound.
 
-`--inspect` pokazuje, czy mikrofon naprawdę coś nagrał, czy tylko ciszę:
+`--inspect` shows whether the microphone really captured sound or only silence:
 
 ```
 rec_000002  0:13  ⚑2  406 KB   peak 37.7%  rms 2.52%  real audio
@@ -269,39 +272,62 @@ rec_000002  0:13  ⚑2  406 KB   peak 37.7%  rms 2.52%  real audio
       ⚑2 @ 0:08  (121474 samples)
 ```
 
-## Struktura
+## Project layout
 
 ```
-Sources/TapeCore/     domena: bez AppKit, bez CoreAudio, bez filesystemu
-  Device.swift          maszyna stanów, cue, markery, odsłuch, MEM
-  Library.swift         archiwum, manifest, dziennik, recovery, repairWav
-  Audio.swift           strumieniowy zapis WAV, analiza PCM, syntetyczny sygnał
-  Keybindings.swift     akcje, kombinacje, defaults, scalanie przy upgrade, kolizje
-  Protocols.swift       MicSource / AudioSink / Clock — granice wymienne
-Sources/Tape/         AppKit + CoreAudio: StatusLED, HotKeys, MicCapture,
+Sources/TapeCore/       the domain: no AppKit, no CoreAudio, no filesystem
+  Device.swift          state machine, cues, markers, audition, MEM
+  Library.swift         archive, manifest, event log, recovery, repairWav
+  Audio.swift           streaming WAV writer, PCM analysis, synthetic signal
+  Keybindings.swift     actions, combos, defaults, upgrade merge, conflicts
+  Protocols.swift       MicSource / AudioSink / Clock — the replaceable edges
+Sources/Tape/           AppKit + CoreAudio: StatusLED, HotKeys, MicCapture,
                         AudioPlayer, ToneFeedback, PreferencesWindow,
                         AppDelegate, SelfTest, Inspector
-  Rename.swift          jednorazowe przejęcie archiwum i ustawień po TABULA
-Tests/TapeCoreTests/  37 testów domeny (stan, cue, zapis, recovery) i skrótów
-scripts/                install.sh · make-app.sh · run.sh · make-icon.swift
+Tests/TapeCoreTests/    37 domain tests (state, cues, writing, recovery)
+scripts/                install.sh · make-app.sh · make-dmg.sh · run.sh · make-icon.swift
 ```
 
-Rdzeń nie zna AppKitu ani CoreAudio: cała logika — maszyna stanów, kursor po
-cue, zapis i recovery — siedzi w `TapeCore` i jest testowana bez UI. Warstwa
-`Sources/Tape/` to tylko wejście i wyjście: mikrofon, odtwarzanie, skróty,
-pasek systemu.
+The core knows nothing about AppKit or CoreAudio: the whole logic — state
+machine, cursor over cues, writing and recovery — lives in `TapeCore` and is
+tested without a UI. `Sources/Tape/` is only the edges: microphone, playback,
+shortcuts, menu bar.
 
-## Znane ograniczenia i następne kroki
+## Releasing
 
-- **Brak kompresji** — pliki są PCM 16 kHz mono (~1,9 MB/min).
-- **Pozycja odtwarzania jest modelowana**, nie czytana z `AVAudioPlayerNode`.
-  Dryf jest ograniczony, bo każdy cue startuje od nowa, ale przy długim
-  odsłuchu bez przerwy może się rozjechać. Naturalny następny krok.
-- **Bez podpisywania** — przy ad-hoc sygnaturze zmienia się cdhash, więc TCC
-  może pytać o mikrofon po każdym rebuildzie. Lekarstwo: darmowy certyfikat
-  „Apple Development" (personal team) i
-  `TAPE_SIGN_IDENTITY="Apple Development: …" ./scripts/run.sh`.
-- **Login item to `LaunchAgent`** — checkbox w Preferencjach (i `install.sh
-  --login`) piszą plist do `~/Library/LaunchAgents`; `SMAppService` wymagałby
-  stabilnej sygnatury.
-- **Jedno okno odsłuchu na raz** — brak kolejki odtwarzania, zgodnie z konceptem.
+Tags are the trigger:
+
+```sh
+git tag v0.2 && git push origin v0.2
+```
+
+`.github/workflows/release.yml` runs the tests, builds the bundle, packs
+`dist/Tape-0.2.dmg` (built by `scripts/make-dmg.sh`, the same script
+`install.sh --dmg` uses), writes `SHA256SUMS`, and publishes a GitHub release
+with the version stamped into the bundle from the tag. A manual run of the
+workflow does the same from any branch and creates the tag itself.
+
+Signing and notarization are not wired up: releases are ad-hoc signed, and the
+release notes say so and explain how to open the app anyway. Wiring in a
+Developer ID certificate and `notarytool` would go between build and publish.
+
+`ci.yml` runs the same tests plus a bundle build on every push to `main` and
+every pull request.
+
+## Known limits and next steps
+
+- **No compression** — files are PCM 16 kHz mono (~1.9 MB/min).
+- **Playback position is modelled**, not read back from `AVAudioPlayerNode`.
+  Drift is bounded because every cue starts afresh, but a long uninterrupted
+  listen can wander. The natural next step.
+- **Unsigned builds** — with an ad-hoc signature the cdhash changes on every
+  rebuild, so TCC may ask for the microphone again. A free "Apple Development"
+  certificate and `TAPE_SIGN_IDENTITY` fix it for good.
+- **The login item is a `LaunchAgent`** — the Preferences checkbox (and
+  `install.sh --login`) write a plist into `~/Library/LaunchAgents`;
+  `SMAppService` would need a stable signature.
+- **One audition at a time** — there is no playback queue, by design.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
