@@ -131,6 +131,14 @@ z nimi nawigacji. Preferencje zbierają to, co wcześniej było podmenu:
 Kropka jest rysowana jako nietemplate'owy `NSImage` z ciemnym obrysem, żeby
 czytała się i na jasnym, i na ciemnym pasku. Pulsowanie animuje pętla 20 Hz.
 
+Ta sama kropka jest **ikoną appki** — powiększona do 1024 px i osadzona
+w grafitowym korpusie (`scripts/make-icon.swift`, rysowany wektorowo w każdym
+rozmiarze, więc 16 px w Finderze nie jest pomniejszonym 1024 px). Czerwień
+trafiła na ikonę, bo jako jedyna ma stan stały — nagrywanie; migająca czerwień
+to błąd, a pozostałe kolory żyją wyłącznie w pasku. Ikona pokazuje się
+w Finderze, na dysku z `--dmg` i w Get Info; `.icns` nie jest w repo, bo
+dorysowuje go `make-app.sh`.
+
 ## Archiwum
 
 Domyślnie `~/Documents/TABULA/` (albo inna ścieżka wskazana z menu — wtedy
@@ -206,6 +214,7 @@ Sources/Tabula/         AppKit + CoreAudio: StatusLED, HotKeys, MicCapture,
                         AudioPlayer, ToneFeedback, PreferencesWindow,
                         AppDelegate, SelfTest, Inspector
 Tests/TabulaCoreTests/  37 scenariuszy przeniesionych z symulatora + skróty
+scripts/make-icon.swift wektorowa ikona appki → Resources/AppIcon.icns
 ```
 
 Rdzeń nie zna AppKitu ani CoreAudio — dokładnie ta sama granica co

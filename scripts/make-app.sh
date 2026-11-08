@@ -22,6 +22,15 @@ cp "$BIN_DIR/Tabula" "$APP/Contents/MacOS/Tabula"
 cp Info.plist "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
+# The icon is drawn, not committed: make-icon.swift renders the menu bar LED at
+# 1024 pt into an .icns. Regenerated only when missing or when the drawing
+# changed, so an ordinary rebuild does not pay for it.
+ICNS="Resources/AppIcon.icns"
+if [ ! -f "$ICNS" ] || [ scripts/make-icon.swift -nt "$ICNS" ]; then
+  ./scripts/make-icon.swift "$ICNS" >&2
+fi
+cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
+
 # Ad-hoc signing is enough to run locally. TCC keys microphone permission off
 # the code signature, so every ad-hoc rebuild looks like a brand new app and
 # re-prompts (or silently denies). A stable identity stops that — a self-signed

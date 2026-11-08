@@ -163,6 +163,13 @@ if [ "$MAKE_DMG" = "1" ]; then
   mkdir -p "$PWD/dist"
   cp -R "$TARGET" "$STAGE/"
   ln -s /Applications "$STAGE/Applications"
+  # The mounted disk wears the same lamp, so the drag-to-Applications window is
+  # recognisable before you read a word. The volume's custom-icon bit can only
+  # be set by SetFile, which ships with the Xcode command line tools.
+  if [ -f "$TARGET/Contents/Resources/AppIcon.icns" ] && command -v SetFile >/dev/null 2>&1; then
+    cp "$TARGET/Contents/Resources/AppIcon.icns" "$STAGE/.VolumeIcon.icns"
+    SetFile -a C "$STAGE"
+  fi
   rm -f "$DMG"
   hdiutil create -volname "TABULA" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
   rm -rf "$STAGE"

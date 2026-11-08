@@ -1,4 +1,7 @@
 .build/
 .swiftpm/
+
+# drawn by scripts/make-icon.swift, built by scripts/make-app.sh
+Resources/AppIcon.icns
 *.xcodeproj
 .DS_Store
