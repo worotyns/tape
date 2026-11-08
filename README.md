@@ -131,13 +131,15 @@ z nimi nawigacji. Preferencje zbierają to, co wcześniej było podmenu:
 Kropka jest rysowana jako nietemplate'owy `NSImage` z ciemnym obrysem, żeby
 czytała się i na jasnym, i na ciemnym pasku. Pulsowanie animuje pętla 20 Hz.
 
-Ta sama kropka jest **ikoną appki** — powiększona do 1024 px i osadzona
-w grafitowym korpusie (`scripts/make-icon.swift`, rysowany wektorowo w każdym
-rozmiarze, więc 16 px w Finderze nie jest pomniejszonym 1024 px). Czerwień
-trafiła na ikonę, bo jako jedyna ma stan stały — nagrywanie; migająca czerwień
-to błąd, a pozostałe kolory żyją wyłącznie w pasku. Ikona pokazuje się
-w Finderze, na dysku z `--dmg` i w Get Info; `.icns` nie jest w repo, bo
-dorysowuje go `make-app.sh`.
+Ta sama kropka jest **ikoną appki** — powiększona i osadzona na płaskim
+grafitowym korpusie (`scripts/make-icon.swift`). Płaska do końca: bez
+gradientu, bez cienia, bez fazowania i bez poświaty. Zostają dwie decyzje —
+kolor i rozmiar kropki — i obie przeżywają skalowanie do 16 px w Finderze,
+bo ikona jest rysowana wektorowo w każdym rozmiarze, a nie pomniejszana
+z 1024 px. Czerwień trafiła na ikonę, bo jako jedyna ma stan stały —
+nagrywanie; migająca czerwień to błąd, a pozostałe kolory żyją wyłącznie
+w pasku. Ikona pokazuje się w Finderze, na dysku z `--dmg` i w Get Info;
+`.icns` nie jest w repo, bo dorysowuje go `make-app.sh`.
 
 ## Archiwum
 
