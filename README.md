@@ -1,22 +1,50 @@
-# TABULA — macOS menu bar app
+# TABULA — rejestrator, który niczego nie kasuje
 
-TABULA jako standalone appka na Maca: **bez okna głównego**, ikona w pasku
+Appka na Maca do nagrywania głosu. **Bez okna głównego**: ikona w pasku
 systemu jest wyświetlaczem, a interfejs to globalne skróty i dźwięk. Jedyne
 okno to Preferencje, otwierane z menu w pasku.
 
-To nie jest symulator sprzętu. Wypadły: bateria, quota karty, deep sleep,
-wkładanie/wyjmowanie karty, dioda RGB jako model. Został **koncept**:
+Do codziennego użytku wystarczą trzy gesty:
 
-- **zapis nigdy nie gubi danych** — append-only, naprawialny, odzyskiwalny,
-- **nawigacja po cue, nie po plikach** — start nagrania i każdy marker MEM,
-- **odsłuch** — przesunięcie kursora od razu gra to, na co trafiłeś,
-- **MEM to przewijanie taśmy** — poza nagrywaniem cofa ~2,5 s i odsłuchuje,
-- **archiwum jest niezmienne** — nic nie kasuje ani nie nadpisuje nagrania.
+- **`⌃⌥R`** — nagrywaj / stop.
+- **`⌃⌥M`** — zaznacz moment. W trakcie nagrywania stawia marker; poza nim
+  cofa taśmę o ~2,5 s i odsłuchuje.
+- **`⌃⌥↑` / `⌃⌥↓`** — idź po cue. Kursor od razu gra to, na co trafił.
+
+## Koncept: nagranie, nie plik
+
+Nagranie nie jest plikiem, który się otwiera, zapisuje i zamyka. Jest **taśmą**,
+na którą się pisze i z której nic nie wolno zgubić. Z tego wynikają wszystkie
+decyzje w appce — także te, które na pierwszy rzut oka wyglądają na brak
+funkcji:
+
+1. **Nic nie kasuje.** Nie ma delete, nie ma nadpisywania, nie ma „zapisz
+   jako”. Archiwum rośnie w jedną stronę — i to jest funkcja, nie zaległość.
+2. **Zapis jest append-only i naprawialny.** Metadane lądują przez `.tmp` +
+   `F_FULLFSYNC` + atomowy `rename`, a każdy marker trafia do dziennika
+   zdarzeń. Jeśli proces padnie w środku nagrania, `recover()` odtworzy je
+   z rozmiaru pliku i z dziennika — i jest idempotentny, więc wolno go puścić
+   dwa razy.
+3. **Nawigacja idzie po cue, nie po plikach.** Cue to start nagrania plus każdy
+   marker MEM. Nie ma listy plików ani folderów do przeklikiwania: jest jedna
+   liniowa taśma z punktami, po której chodzi kursor.
+4. **Ruch kursora to odsłuch.** Przesunięcie kursora nie „wybiera” pozycji —
+   od razu ją gra. Momentu w nagraniu szukasz więc słuchem, nie wzrokiem.
+5. **MEM to przewijanie taśmy.** MEM nie ma własnej akcji nawigacyjnej (nie
+   duplikuje kursora), przez co jest wolny i służy jako modyfikator precyzji:
+   przytrzymany kręci o kilka sekund w obrębie nagrania, a poza nagrywaniem
+   cofa ~2,5 s — jak cofnięcie taśmy kciukiem, żeby usłyszeć to jeszcze raz.
+6. **Archiwum jest fizyczne.** Całe archiwum to jeden folder (albo karta):
+   `manifest.json` + dziennik zdarzeń + WAV-y. Format jest ten sam co
+   w symulatorze JS, więc oba czytają ten sam folder.
+
+To **koncept**, nie symulator sprzętu. Wypadły bateria, quota karty, deep sleep,
+wkładanie i wyjmowanie karty oraz dioda RGB jako model — zostało zachowanie,
+które ma sens na desktopie.
 
 ## Instalacja
 
 ```bash
-cd macosapp
 ./scripts/install.sh          # buduje i instaluje do /Applications
 ```
 
@@ -219,9 +247,8 @@ Tests/TabulaCoreTests/  37 scenariuszy przeniesionych z symulatora + skróty
 scripts/make-icon.swift wektorowa ikona appki → Resources/AppIcon.icns
 ```
 
-Rdzeń nie zna AppKitu ani CoreAudio — dokładnie ta sama granica co
-`docs/HARDWARE_ABSTRACTION.md` w symulatorze, więc port na ESP-IDF nadal jest
-realny.
+Rdzeń nie zna AppKitu ani CoreAudio — ta sama granica, której w symulatorze JS
+pilnuje `HARDWARE_ABSTRACTION.md`, więc port na ESP-IDF nadal jest realny.
 
 ## Znane ograniczenia i następne kroki
 
