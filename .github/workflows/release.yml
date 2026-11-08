@@ -1,0 +1,126 @@
+name: release
+
+# Tags are the release trigger:
+#
+#   git tag v0.2 && git push origin v0.2
+#
+# which builds, tests, packs a drag-to-Applications disk image and publishes it
+# with a checksum. A manual run does the same from any branch and creates the
+# tag itself, so the release and the source it came from always agree.
+#
+# macOS is required: AppKit, AVFoundation, Carbon and hdiutil. There are no
+# package dependencies to cache, so a run is mostly `swift build`.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to release, without the leading v (creates the tag)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Bump deliberately, not via macos-latest: the runner's Xcode decides which
+    # SDK the bundle is built against.
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # tags, for the compare link in the notes
+
+      - name: Work out the version
+        id: v
+        run: |
+          set -euo pipefail
+          version="${{ inputs.version }}"
+          if [ -z "$version" ]; then version="${GITHUB_REF_NAME#v}"; fi
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+(\.[0-9]+)?$'; then
+            echo "not a version: '$version'" >&2
+            exit 1
+          fi
+          tag="v$version"
+          prev="$(git tag --sort=-v:refname | grep -v "^$tag\$" | head -1 || true)"
+          {
+            echo "version=$version"
+            echo "tag=$tag"
+            echo "prev=$prev"
+          } >> "$GITHUB_OUTPUT"
+
+      # The tests are the domain's durability guarantees (kill mid-write,
+      # recover, markers survive). A release that fails them is not a release.
+      - name: Test
+        run: swift test
+
+      - name: Build the disk image
+        env:
+          TAPE_VERSION: ${{ steps.v.outputs.version }}
+          TAPE_BUILD: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          ./scripts/make-dmg.sh release dist
+          (cd dist && shasum -a 256 ./*.dmg > SHA256SUMS)
+          cat dist/SHA256SUMS
+
+      # Signing and notarization would go here, between build and publish:
+      # import a Developer ID certificate from a secret into a temporary
+      # keychain, sign with TAPE_SIGN_IDENTITY, then `xcrun notarytool submit`
+      # and `stapler staple`. Without them the app is ad-hoc signed and the
+      # notes below tell people how to open it anyway.
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.v.outputs.version }}
+          TAG: ${{ steps.v.outputs.tag }}
+          PREV: ${{ steps.v.outputs.prev }}
+        run: |
+          set -euo pipefail
+
+          # A manual run has no tag yet. Make one, so the release names the
+          # exact commit it was built from.
+          if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+          if [ -n "$PREV" ]; then
+            changes="https://github.com/$GITHUB_REPOSITORY/compare/$PREV...$TAG"
+          else
+            changes="https://github.com/$GITHUB_REPOSITORY/commits/$TAG"
+          fi
+
+          {
+            echo "TAPE $VERSION — a recorder that never forgets, in the menu bar."
+            echo
+            echo "Drag **Tape.app** onto Applications in the window that opens."
+            echo
+            echo "**This build is ad-hoc signed, not notarized.** A copy that arrived"
+            echo "as a download therefore carries a quarantine flag and Gatekeeper"
+            echo "will refuse the first launch. Either right-click the app and choose"
+            echo "*Open*, or clear the flag:"
+            echo
+            echo '```sh'
+            echo "xattr -dr com.apple.quarantine /Applications/Tape.app"
+            echo '```'
+            echo
+            echo "macOS will then ask twice: once for access to your Documents folder"
+            echo "(the archive lives in \`~/Documents/TAPE\`) and once for the microphone,"
+            echo "the first time you record. Nothing in this disk image touches existing"
+            echo "recordings, and nothing in the app ever deletes one."
+            echo
+            echo "Checksums are attached as \`SHA256SUMS\`."
+            echo
+            echo "**Changes**: $changes"
+          } > "$RUNNER_TEMP/notes.md"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG exists; replacing assets"
+            gh release upload "$TAG" dist/*.dmg dist/SHA256SUMS --clobber
+          else
+            gh release create "$TAG" dist/*.dmg dist/SHA256SUMS \
+              --title "TAPE $VERSION" \
+              --notes-file "$RUNNER_TEMP/notes.md"
+          fi

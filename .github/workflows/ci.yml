@@ -1,0 +1,30 @@
+name: ci
+
+# The durability guarantees in this app are the tests: a recording survives the
+# process being killed mid-write, recovery is idempotent, markers come back,
+# nothing deletes a finalized recording. They run headless in seconds, so they
+# run on every push and every pull request — a tag should never be the first
+# time anyone notices they fail.
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test
+        run: swift test
+
+      # Building the bundle is a separate check: the tests only cover TapeCore,
+      # which deliberately knows nothing about AppKit, CoreAudio or Carbon.
+      # A missing framework or a broken bundle would otherwise only surface at
+      # release time.
+      - name: Build the app bundle
+        run: ./scripts/make-app.sh debug

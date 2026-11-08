@@ -5,3 +5,6 @@
 Resources/AppIcon.icns
 *.xcodeproj
 .DS_Store
+
+# built by scripts/make-dmg.sh and the release workflow
+dist/

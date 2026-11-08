@@ -19,17 +19,6 @@ BUNDLE_ID="local.tape.recorder"
 APP_NAME="Tape.app"
 AGENT="$HOME/Library/LaunchAgents/$BUNDLE_ID.plist"
 
-# The app was called TABULA until it was renamed. Only these four lines and
-# migrate_legacy_install() below know that; delete them once no TABULA copy is
-# left anywhere. The app itself adopts the old archive folder and preferences
-# (see Sources/Tape/Rename.swift) — the installer's job is the two things the
-# app cannot clean up from inside: its own old bundle and its old login item.
-LEGACY_BUNDLE_ID="local.tabula.recorder"
-LEGACY_APP_NAME="Tabula.app"
-LEGACY_EXEC="Tabula"
-LEGACY_ARCHIVE_NAME="TABULA"
-ARCHIVE_NAME="TAPE"
-
 DEST="/Applications"
 CONFIG="release"
 MAKE_DMG=0
@@ -53,11 +42,6 @@ done
 
 TARGET="$DEST/$APP_NAME"
 
-# The signing identity variable was renamed with the app; anybody with the old
-# name still exported (a shell profile, a CI job) should keep working. Resolved
-# here, exported, so make-app.sh sees one value either way.
-export TAPE_SIGN_IDENTITY="${TAPE_SIGN_IDENTITY:-${TABULA_SIGN_IDENTITY:--}}"
-
 stop_running() {
   if pgrep -f "$TARGET/Contents/MacOS/Tape" >/dev/null 2>&1; then
     echo "stopping the running copy…"
@@ -75,64 +59,9 @@ remove_login_item() {
   fi
 }
 
-# Stop the old TABULA copy, drop its login item and delete its bundle. Left
-# alone it would keep launching a path that no longer exists — and if it also
-# still ran, you would have two dots in the menu bar fighting over one archive.
-migrate_legacy_install() {
-  local legacy_target="$DEST/$LEGACY_APP_NAME"
-  local legacy_agent="$HOME/Library/LaunchAgents/$LEGACY_BUNDLE_ID.plist"
-  local migrated=0
-
-  if [ -f "$legacy_agent" ]; then
-    launchctl bootout "gui/$(id -u)" "$legacy_agent" >/dev/null 2>&1 \
-      || launchctl unload "$legacy_agent" >/dev/null 2>&1 || true
-    rm -f "$legacy_agent"
-    echo "removed the old TABULA login item"
-    migrated=1
-  fi
-  if pgrep -f "$legacy_target/Contents/MacOS/$LEGACY_EXEC" >/dev/null 2>&1; then
-    pkill -f "$legacy_target/Contents/MacOS/$LEGACY_EXEC" || true
-    sleep 1
-  fi
-  if [ -d "$legacy_target" ]; then
-    rm -rf "$legacy_target"
-    echo "removed the old $legacy_target"
-    migrated=1
-  fi
-
-  # The archive folder. The app renames this itself too (Sources/Tape/Rename.swift),
-  # but the freshly renamed app has not been granted Documents access yet, so its
-  # attempt can fail; a shell here already has it. Either way it is a move, and
-  # only when the new name is still free.
-  local legacy_archive="$HOME/Documents/$LEGACY_ARCHIVE_NAME"
-  local archive="$HOME/Documents/$ARCHIVE_NAME"
-  if [ -d "$legacy_archive" ] && [ ! -e "$archive" ]; then
-    if mv "$legacy_archive" "$archive"; then
-      echo "renamed ~/Documents/$LEGACY_ARCHIVE_NAME to ~/Documents/$ARCHIVE_NAME"
-      migrated=1
-    else
-      echo "warning: could not rename $legacy_archive; TAPE keeps using it where it is" >&2
-    fi
-  fi
-
-  # macOS keys both mic consent and Documents-folder access off the bundle
-  # identifier, which the rename changed — so this one update costs an extra
-  # prompt for each, however the app is signed. Say so, instead of letting it
-  # look like a regression.
-  if [ "$migrated" = "1" ]; then
-    echo
-    echo "note: the bundle identifier changed with the rename, so macOS treats"
-    echo "      this as a new app. It will ask again for access to your Documents"
-    echo "      folder, where the archive lives, and for the microphone the first"
-    echo "      time you record. Your recordings and shortcuts carry over."
-    echo
-  fi
-}
-
 if [ "$UNINSTALL" = "1" ]; then
   stop_running
   remove_login_item
-  migrate_legacy_install
   if [ -d "$TARGET" ]; then
     rm -rf "$TARGET"
     echo "removed $TARGET"
@@ -161,11 +90,10 @@ if [ ! -w "$DEST" ]; then
 fi
 
 stop_running
-migrate_legacy_install
 
 # Replacing an ad-hoc signed app changes its cdhash, and macOS keys microphone
 # permission off that. Warn before silently costing the user another TCC prompt.
-if [ "$TAPE_SIGN_IDENTITY" = "-" ] && [ -d "$TARGET" ]; then
+if [ "${TAPE_SIGN_IDENTITY:--}" = "-" ] && [ -d "$TARGET" ]; then
   old_hash="$(codesign -dvvv "$TARGET" 2>&1 | sed -n 's/^CDHash=//p' | head -1)"
   new_hash="$(codesign -dvvv "$APP" 2>&1 | sed -n 's/^CDHash=//p' | head -1)"
   if [ -n "$old_hash" ] && [ "$old_hash" != "$new_hash" ]; then
@@ -242,24 +170,15 @@ fi
 
 # ---- optional disk image --------------------------------------------------
 
+# ---- optional disk image --------------------------------------------------
+
+# Packing lives in its own script because it must work without installing
+# anything: `install.sh` copies into /Applications, which a CI runner cannot and
+# should not do, and the release workflow has to produce the same disk image.
+
 if [ "$MAKE_DMG" = "1" ]; then
-  VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Info.plist)"
-  STAGE="$(mktemp -d)"
-  DMG="$PWD/dist/TAPE-$VERSION.dmg"
-  mkdir -p "$PWD/dist"
-  cp -R "$TARGET" "$STAGE/"
-  ln -s /Applications "$STAGE/Applications"
-  # The mounted disk wears the same lamp, so the drag-to-Applications window is
-  # recognisable before you read a word. The volume's custom-icon bit can only
-  # be set by SetFile, which ships with the Xcode command line tools.
-  if [ -f "$TARGET/Contents/Resources/AppIcon.icns" ] && command -v SetFile >/dev/null 2>&1; then
-    cp "$TARGET/Contents/Resources/AppIcon.icns" "$STAGE/.VolumeIcon.icns"
-    SetFile -a C "$STAGE"
-  fi
-  rm -f "$DMG"
-  hdiutil create -volname "TAPE" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
-  rm -rf "$STAGE"
-  echo "built $DMG"
+  ./scripts/make-dmg.sh "$CONFIG"
+  echo
   echo "note: an unsigned app that arrives *downloaded* will be blocked by"
   echo "Gatekeeper. Locally built copies carry no quarantine flag and just run."
 fi

@@ -31,6 +31,16 @@ if [ ! -f "$ICNS" ] || [ scripts/make-icon.swift -nt "$ICNS" ]; then
 fi
 cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
 
+# Optional version stamping. A release artifact should say what it is, and the
+# tag is the only thing that knows — so the release workflow passes TAPE_VERSION
+# from the tag instead of trusting someone to have bumped Info.plist. Only the
+# copy inside the bundle is touched, never the repository's Info.plist.
+if [ -n "${TAPE_VERSION:-}" ]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $TAPE_VERSION" \
+    -c "Set :CFBundleVersion ${TAPE_BUILD:-$TAPE_VERSION}" "$APP/Contents/Info.plist" >/dev/null
+  echo "version: $TAPE_VERSION (build ${TAPE_BUILD:-$TAPE_VERSION})" >&2
+fi
+
 # Ad-hoc signing is enough to run locally. TCC keys microphone permission off
 # the code signature, so every ad-hoc rebuild looks like a brand new app and
 # re-prompts (or silently denies). A stable identity stops that — a self-signed
@@ -39,8 +49,7 @@ cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
 #
 #   TAPE_SIGN_IDENTITY="TAPE Dev" ./scripts/install.sh
 #
-# TAPE_SIGN_IDENTITY, with the pre-rename TABULA_SIGN_IDENTITY still honoured.
-SIGN_IDENTITY="${TAPE_SIGN_IDENTITY:-${TABULA_SIGN_IDENTITY:--}}"
+SIGN_IDENTITY="${TAPE_SIGN_IDENTITY:--}"
 if codesign --force --sign "$SIGN_IDENTITY" "$APP" >/dev/null 2>&1; then
   echo "signed with: $SIGN_IDENTITY" >&2
 else
