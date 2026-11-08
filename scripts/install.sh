@@ -118,6 +118,20 @@ cp -R "$APP" "$TARGET"
 # bundle is ever moved through a zip or a download.
 xattr -dr com.apple.quarantine "$TARGET" 2>/dev/null || true
 
+# Spotlight and the icon caches both key off the bundle path and its
+# modification time, so a replaced app can keep showing the previous name,
+# kind or icon in Spotlight, Finder and Get Info until something pokes them.
+# Poke them, cheaply: reimport this one bundle and let IconServices redraw it.
+# The sledgehammer — `sudo mdutil -E /` — erases the whole volume's index and
+# spends hours rebuilding it, which fixes nothing that this does not.
+mdimport "$TARGET" 2>/dev/null || true
+touch "$TARGET"
+LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+if [ -x "$LSREGISTER" ]; then
+  "$LSREGISTER" -f "$TARGET" >/dev/null 2>&1 || true
+fi
+pkill -u "$(id -u)" iconservicesagent 2>/dev/null || true
+
 echo "installed $TARGET"
 
 # ---- optional login item --------------------------------------------------
