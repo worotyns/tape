@@ -27,6 +27,8 @@ AGENT="$HOME/Library/LaunchAgents/$BUNDLE_ID.plist"
 LEGACY_BUNDLE_ID="local.tabula.recorder"
 LEGACY_APP_NAME="Tabula.app"
 LEGACY_EXEC="Tabula"
+LEGACY_ARCHIVE_NAME="TABULA"
+ARCHIVE_NAME="TAPE"
 
 DEST="/Applications"
 CONFIG="release"
@@ -98,14 +100,31 @@ migrate_legacy_install() {
     migrated=1
   fi
 
-  # macOS keys microphone consent off the bundle identifier, which the rename
-  # changed — so this one update costs one extra prompt, however the app is
-  # signed. Say so instead of letting it look like a regression.
+  # The archive folder. The app renames this itself too (Sources/Tape/Rename.swift),
+  # but the freshly renamed app has not been granted Documents access yet, so its
+  # attempt can fail; a shell here already has it. Either way it is a move, and
+  # only when the new name is still free.
+  local legacy_archive="$HOME/Documents/$LEGACY_ARCHIVE_NAME"
+  local archive="$HOME/Documents/$ARCHIVE_NAME"
+  if [ -d "$legacy_archive" ] && [ ! -e "$archive" ]; then
+    if mv "$legacy_archive" "$archive"; then
+      echo "renamed ~/Documents/$LEGACY_ARCHIVE_NAME to ~/Documents/$ARCHIVE_NAME"
+      migrated=1
+    else
+      echo "warning: could not rename $legacy_archive; TAPE keeps using it where it is" >&2
+    fi
+  fi
+
+  # macOS keys both mic consent and Documents-folder access off the bundle
+  # identifier, which the rename changed — so this one update costs an extra
+  # prompt for each, however the app is signed. Say so, instead of letting it
+  # look like a regression.
   if [ "$migrated" = "1" ]; then
     echo
     echo "note: the bundle identifier changed with the rename, so macOS treats"
-    echo "      this as a new app and will ask for microphone access once more,"
-    echo "      the next time you record. Your recordings and shortcuts carry over."
+    echo "      this as a new app. It will ask again for access to your Documents"
+    echo "      folder, where the archive lives, and for the microphone the first"
+    echo "      time you record. Your recordings and shortcuts carry over."
     echo
   fi
 }

@@ -79,22 +79,28 @@ kasuje, ani instalacja, ani odinstalowanie.
 
 ### Aktualizacja z TABULA
 
-Appka nazywała się TABULA. Pod nową nazwą dwie rzeczy przechodzą same, przy
-pierwszym uruchomieniu (`Sources/Tape/Rename.swift` to jedyne miejsce, które
-zna starą nazwę):
+Appka nazywała się TABULA. Pod nową nazwą dwie rzeczy przechodzą same
+(`Sources/Tape/Rename.swift` to jedyne miejsce w kodzie, które zna starą nazwę):
 
-- **archiwum** `~/Documents/TABULA` jest przenoszone do `~/Documents/TAPE` —
-  `rename`, nie kopiowanie i nie kasowanie: albo całe, albo wcale. Gdyby się nie
-  udało, appka czyta dalej stary folder, zamiast założyć obok pusty nowy,
+- **archiwum**: `~/Documents/TABULA` → `~/Documents/TAPE`. To `mv`, nie
+  kopiowanie i nie kasowanie — albo całe, albo wcale — i tylko domyślna
+  lokalizacja, bo archiwum wskazane ręcznie gdzie indziej zostaje na miejscu.
+  Robi to instalator (powłoka ma już dostęp do Dokumentów), a appka próbuje
+  tego sama, gdyby ktoś aktualizował bez instalatora. Gdy przeniesienie się nie
+  uda, appka czyta dalej stary folder, zamiast założyć obok pusty nowy,
 - **ustawienia** ze starej domeny preferencji (ścieżka archiwum, wzmocnienie,
-  skróty) są przepisywane do nowej, raz.
+  skróty) są przepisywane do nowej, raz. Zapamiętana ścieżka wskazująca na
+  `…/TABULA` jest poprawiana, a gdy folderu nie ma z innego powodu — kasowana,
+  żeby appka nie odtworzyła pustego archiwum w losowym miejscu.
 
-Instalator sprząta przy okazji starą appkę i jej login item — inaczej zostałby
-w pasku drugi punkcik i wpis startujący ścieżkę, której już nie ma.
+Instalator sprząta też starą appkę i jej login item — inaczej zostałby w pasku
+drugi punkcik i wpis startujący ścieżkę, której już nie ma.
 
-Jedyny koszt: identyfikator bundla się zmienił, więc macOS traktuje TAPE jako
-nową appkę i **raz** zapyta ponownie o mikrofon — przy pierwszym nagraniu.
-Nagrania i skróty zostają.
+Koszt: identyfikator bundla się zmienił, więc macOS traktuje TAPE jako nową
+appkę i **raz** zapyta ponownie — o dostęp do folderu Dokumenty (tam jest
+archiwum) i o mikrofon przy pierwszym nagraniu. Nagrania i skróty zostają.
+Dopóki dostęp do Dokumentów nie jest przyznany, kropka miga na czerwono (błąd),
+a appka próbuje otworzyć archiwum co 2 s — po „Allow” wraca sama, bez restartu.
 
 ```bash
 ./scripts/run.sh              # build release + .app + launch

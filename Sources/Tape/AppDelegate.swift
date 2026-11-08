@@ -31,6 +31,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// Change detector for the remembered cursor. Deliberately an Int: reading
     /// the current cue touches the disk, and the tick runs 20 times a second.
     private var lastCursorIndex: Int = -1
+    /// Throttles the retry of a failed archive open, and the stderr line that
+    /// explains it.
+    private var lastOpenAttempt: TimeInterval = 0
+    private var lastReported: String?
 
     private var micStatus: AVAuthorizationStatus {
         AVCaptureDevice.authorizationStatus(for: .audio)
@@ -71,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         // Re-selecting the archive we already hold would deadlock against our
         // own lock, and there is nothing to do anyway.
         if let existing = library, existing.root.path == url.path { return }
+        lastOpenAttempt = ProcessInfo.processInfo.systemUptime
 
         do {
             let lib = try Library.open(at: url)
@@ -78,8 +83,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // the *same* bundle, but the installed copy and a freshly built one
             // are two bundles: without this they collide on recording ids.
             guard lib.acquireLock() else {
-                statusNote = "another TAPE is already using \(url.path)"
-                note(statusNote!)
+                report("another TAPE is already using \(url.path)")
                 return
             }
             let dev = Device(
@@ -105,9 +109,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         } catch {
             library = nil
             device = nil
-            statusNote = "cannot open archive: \(error)"
-            note(statusNote!)
+            report("cannot open archive: \(error)")
         }
+    }
+
+    /// Set the status line, and complain to stderr only when it changes: the
+    /// tick retries a failed open every couple of seconds, and a folder that is
+    /// not there yet would otherwise reprint itself forever.
+    private func report(_ message: String) {
+        statusNote = message
+        guard message != lastReported else { return }
+        lastReported = message
+        note(message)
     }
 
     // MARK: - Remembered cursor
@@ -292,7 +305,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let dt = min(250, max(0, now - lastTickMs))
         lastTickMs = now
 
-        guard let device else { return }
+        // A failed open is usually a permission that has not been answered yet
+        // (the first launch under a new name, or an archive on a volume that is
+        // not mounted). Retry quietly rather than sitting dead until the next
+        // launch — and say so on the LED, because a grey dot reads as "idle",
+        // not as "I cannot reach your recordings".
+        guard let device else {
+            led.update(LedState(color: .red, mode: .blink, reason: statusNote), dtMs: dt)
+            if ProcessInfo.processInfo.systemUptime - lastOpenAttempt > 2 {
+                openLibrary(at: libraryURL)
+            }
+            return
+        }
 
         // Deliberately NOT a full snapshot: that would re-read and decode every
         // metadata file 20 times a second. The tick only needs the LED and the
