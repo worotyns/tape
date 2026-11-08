@@ -12,18 +12,22 @@ if arguments.contains("--inspect") {
 }
 if arguments.contains("--help") {
     print("""
-    TABULA — offline, screenless, archive-only audio recorder.
+    TAPE — offline, screenless, archive-only audio recorder.
 
     Usage:
-      Tabula                     run as a menu bar app
-      Tabula --selftest [dir]    headless end-to-end check of the archive pipeline
-      Tabula --inspect [dir]     print what an archive contains (default ~/Documents/TABULA)
+      Tape                     run as a menu bar app
+      Tape --selftest [dir]    headless end-to-end check of the archive pipeline
+      Tape --inspect [dir]     print what an archive contains (default ~/Documents/TAPE)
 
     Options:
       -libraryPath <dir>         use <dir> as the archive for this run only
     """)
     exit(0)
 }
+
+// Before the delegate exists: it reads preferences and the archive path in its
+// property initialisers, and the rename migration has to land first.
+Rename.migrate()
 
 let delegate = AppDelegate()
 let application = NSApplication.shared

@@ -2,23 +2,23 @@
 import PackageDescription
 
 let package = Package(
-    name: "Tabula",
+    name: "Tape",
     platforms: [.macOS(.v13)],
     products: [
-        .library(name: "TabulaCore", targets: ["TabulaCore"]),
-        .executable(name: "Tabula", targets: ["Tabula"]),
+        .library(name: "TapeCore", targets: ["TapeCore"]),
+        .executable(name: "Tape", targets: ["Tape"]),
     ],
     targets: [
-        .target(name: "TabulaCore"),
+        .target(name: "TapeCore"),
         .executableTarget(
-            name: "Tabula",
-            dependencies: ["TabulaCore"],
+            name: "Tape",
+            dependencies: ["TapeCore"],
             linkerSettings: [
                 .linkedFramework("AppKit"),
                 .linkedFramework("AVFoundation"),
                 .linkedFramework("Carbon"),
             ]
         ),
-        .testTarget(name: "TabulaCoreTests", dependencies: ["TabulaCore"]),
+        .testTarget(name: "TapeCoreTests", dependencies: ["TapeCore"]),
     ]
 )

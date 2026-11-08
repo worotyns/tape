@@ -1,6 +1,6 @@
 import AppKit
 import Carbon.HIToolbox
-import TabulaCore
+import TapeCore
 
 // MARK: - NSEvent → KeyCombo
 //
@@ -180,7 +180,7 @@ final class ShortcutButton: NSButton {
 // never disagree, and it works for a locally built bundle too.
 
 enum LoginItem {
-    static var bundleID: String { Bundle.main.bundleIdentifier ?? "local.tabula.recorder" }
+    static var bundleID: String { Bundle.main.bundleIdentifier ?? "local.tape.recorder" }
 
     static var url: URL {
         FileManager.default.homeDirectoryForCurrentUser
@@ -203,7 +203,7 @@ enum LoginItem {
                 withIntermediateDirectories: true
             )
             let executable = Bundle.main.executableURL?.path
-                ?? Bundle.main.bundlePath + "/Contents/MacOS/Tabula"
+                ?? Bundle.main.bundlePath + "/Contents/MacOS/Tape"
             let plist: [String: Any] = [
                 "Label": bundleID,
                 "ProgramArguments": [executable],
@@ -302,7 +302,7 @@ final class PreferencesController: NSWindowController, NSWindowDelegate, Shortcu
             backing: .buffered,
             defer: false
         )
-        window.title = "TABULA Preferences"
+        window.title = "TAPE Preferences"
         window.isReleasedWhenClosed = false
         window.center()
 
@@ -358,7 +358,7 @@ final class PreferencesController: NSWindowController, NSWindowDelegate, Shortcu
         // The three help lines that used to sit in the menu: the app is
         // screenless, so this is the only place they can be read calmly.
         for line in [
-            "TABULA records into a folder you choose and stays out of the way — the coloured dot in the menu bar is the only display while you work.",
+            "TAPE records into a folder you choose and stays out of the way — the coloured dot in the menu bar is the only display while you work.",
             "Everything is done with the global shortcuts below. Nothing is overwritten: every recording stays in the archive for good.",
             "Red = recording, green = playback, cyan = cue change, magenta = fine scrub. The ends of the archive get their own low blip.",
         ] {
@@ -386,7 +386,7 @@ final class PreferencesController: NSWindowController, NSWindowDelegate, Shortcu
         stack.addArrangedSubview(separator())
         stack.addArrangedSubview(header("Startup"))
         launchCheckbox = NSButton(
-            checkboxWithTitle: "Launch TABULA at login",
+            checkboxWithTitle: "Launch TAPE at login",
             target: self,
             action: #selector(toggleLaunchAtLogin(_:))
         )

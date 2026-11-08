@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import TabulaCore
+import TapeCore
 
 /// Every audible signal the app makes. Since there is no window, sound is the
 /// interface: marker confirmations, refusals, errors, and the screenless

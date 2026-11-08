@@ -1,6 +1,6 @@
 #!/usr/bin/env swift
 //
-// Draw the TABULA app icon and write Resources/AppIcon.icns.
+// Draw the TAPE app icon and write Resources/AppIcon.icns.
 //
 //   ./scripts/make-icon.swift [output.icns]
 //
@@ -84,7 +84,7 @@ let destination = URL(fileURLWithPath: CommandLine.arguments.count > 1
                       ? CommandLine.arguments[1]
                       : "Resources/AppIcon.icns")
 let iconset = URL(fileURLWithPath: NSTemporaryDirectory())
-    .appendingPathComponent("Tabula-\(ProcessInfo.processInfo.processIdentifier).iconset")
+    .appendingPathComponent("Tape-\(ProcessInfo.processInfo.processIdentifier).iconset")
 try? FileManager.default.removeItem(at: iconset)
 try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
 

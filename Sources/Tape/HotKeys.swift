@@ -65,7 +65,7 @@ final class HotKeyCenter {
     }
 
     fileprivate func log(_ message: String) {
-        FileHandle.standardError.write(Data("tabula: \(message)\n".utf8))
+        FileHandle.standardError.write(Data("tape: \(message)\n".utf8))
     }
 
     private static let callback: EventHandlerUPP = { _, event, userData in

@@ -1,6 +1,6 @@
 import AppKit
 import AVFoundation
-import TabulaCore
+import TapeCore
 
 /// The whole app: a status item, a minimal menu, a handful of global hot keys,
 /// and a 20 Hz tick that drives the domain. There is no main window and the app
@@ -42,9 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let saved = UserDefaults.standard.string(forKey: "libraryPath") {
             return URL(fileURLWithPath: saved, isDirectory: true)
         }
-        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSHomeDirectory())
-        return base.appendingPathComponent("TABULA", isDirectory: true)
+        return Rename.defaultArchiveURL()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -80,7 +78,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             // the *same* bundle, but the installed copy and a freshly built one
             // are two bundles: without this they collide on recording ids.
             guard lib.acquireLock() else {
-                statusNote = "another TABULA is already using \(url.path)"
+                statusNote = "another TAPE is already using \(url.path)"
                 note(statusNote!)
                 return
             }
@@ -164,7 +162,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         panel.canCreateDirectories = true
         panel.allowsMultipleSelection = false
         panel.prompt = "Use as archive"
-        panel.message = "Pick the folder TABULA should treat as its tape archive."
+        panel.message = "Pick the folder TAPE should use as its archive."
         panel.directoryURL = libraryURL.deletingLastPathComponent()
         guard panel.runModal() == .OK, let url = panel.url else { return }
         // Finalize anything in flight before switching archives.
@@ -317,7 +315,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if recordingAssertion == nil {
                 recordingAssertion = ProcessInfo.processInfo.beginActivity(
                     options: [.userInitiated, .idleSystemSleepDisabled],
-                    reason: "TABULA is recording"
+                    reason: "TAPE is recording"
                 )
             }
         } else {
@@ -345,7 +343,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         appItem.submenu = appMenu
         appMenu.addItem(action("Preferences…", #selector(menuPreferences), key: ","))
         appMenu.addItem(.separator())
-        appMenu.addItem(action("Quit TABULA", #selector(menuQuit), key: "q"))
+        appMenu.addItem(action("Quit TAPE", #selector(menuQuit), key: "q"))
         main.addItem(appItem)
 
         let editItem = NSMenuItem()
@@ -383,7 +381,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(action("Preferences…", #selector(menuPreferences), key: ","))
         menu.addItem(.separator())
-        menu.addItem(action("Quit TABULA", #selector(menuQuit), key: "q"))
+        menu.addItem(action("Quit TAPE", #selector(menuQuit), key: "q"))
     }
 
     private func statusLine(_ snapshot: Snapshot) -> String {
@@ -484,7 +482,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func note(_ message: String) {
-        FileHandle.standardError.write(Data("tabula: \(message)\n".utf8))
+        FileHandle.standardError.write(Data("tape: \(message)\n".utf8))
     }
 
     private func formatSeconds(_ seconds: Double) -> String {

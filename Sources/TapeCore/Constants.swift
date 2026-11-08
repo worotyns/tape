@@ -1,4 +1,4 @@
-// Tabula domain constants and configuration.
+// Tape domain constants and configuration.
 //
 // Ported from the JS simulator with the *hardware* parts removed: no battery,
 // no card quota, no deep sleep, no deferred Opus compression. What remains is

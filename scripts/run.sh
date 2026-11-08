@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build TABULA and launch it straight from the build directory. For a normal
+# Build TAPE and launch it straight from the build directory. For a normal
 # installed app use ./scripts/install.sh instead.
 #
 #   ./scripts/run.sh            build release, launch
@@ -32,7 +32,7 @@ APP="$(./scripts/make-app.sh "$CONFIG")"
 echo "built $APP"
 
 if [ "$FOREGROUND" = "1" ]; then
-  exec "$APP/Contents/MacOS/Tabula"
+  exec "$APP/Contents/MacOS/Tape"
 fi
 if [ "$DO_OPEN" = "1" ]; then
   open "$APP"

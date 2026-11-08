@@ -5,17 +5,17 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleExecutable</key>
-	<string>Tabula</string>
+	<string>Tape</string>
 	<key>CFBundleIdentifier</key>
-	<string>local.tabula.recorder</string>
+	<string>local.tape.recorder</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleIconFile</key>
 	<string>AppIcon</string>
 	<key>CFBundleName</key>
-	<string>TABULA</string>
+	<string>TAPE</string>
 	<key>CFBundleDisplayName</key>
-	<string>TABULA</string>
+	<string>TAPE</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -31,6 +31,6 @@
 	<true/>
 	<!-- Without this key the microphone request is denied with no prompt. -->
 	<key>NSMicrophoneUsageDescription</key>
-	<string>TABULA records microphone audio into the archive folder you choose.</string>
+	<string>TAPE records microphone audio into the archive folder you choose.</string>
 </dict>
 </plist>

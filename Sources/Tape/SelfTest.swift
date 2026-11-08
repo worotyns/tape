@@ -1,21 +1,22 @@
 import AVFoundation
 import Foundation
-import TabulaCore
+import TapeCore
 
 /// Print what an archive actually contains, without the GUI — including whether
 /// the microphone really captured sound rather than silence.
 ///
-///     ./Tabula --inspect [folder]
+///     ./Tape --inspect [folder]
 ///
-/// Defaults to ~/Documents/TABULA.
+/// Defaults to ~/Documents/TAPE.
 enum Inspector {
     static func run(arguments: [String]) -> Int32 {
         let root: URL
         if let path = arguments.dropFirst().first, !path.hasPrefix("-") {
             root = URL(fileURLWithPath: path, isDirectory: true)
         } else {
-            root = URL(fileURLWithPath: NSHomeDirectory())
-                .appendingPathComponent("Documents/TABULA", isDirectory: true)
+            // Read-only, and no migration: inspecting an archive must not move
+            // one. `Rename` only says where it would be.
+            root = Rename.defaultArchiveURL()
         }
 
         guard let library = try? Library.open(at: root) else {
@@ -125,7 +126,7 @@ enum Inspector {
 /// microphone or TCC. Useful for CI and for verifying that recovery of a
 /// killed recording really works.
 ///
-///     ./Tabula --selftest [folder]
+///     ./Tape --selftest [folder]
 enum SelfTest {
     static func run(arguments: [String]) -> Int32 {
         let root: URL
@@ -133,7 +134,7 @@ enum SelfTest {
             root = URL(fileURLWithPath: path, isDirectory: true)
         } else {
             root = URL(fileURLWithPath: NSTemporaryDirectory())
-                .appendingPathComponent("tabula-selftest-\(UUID().uuidString)", isDirectory: true)
+                .appendingPathComponent("tape-selftest-\(UUID().uuidString)", isDirectory: true)
         }
 
         var failures: [String] = []

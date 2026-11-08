@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import TabulaCore
+import TapeCore
 
 /// Real microphone capture, downsampled to the device's 16 kHz mono s16le.
 ///
@@ -63,7 +63,7 @@ final class MicCapture: MicSource {
         let format = input.inputFormat(forBus: 0)
         guard format.channelCount > 0, format.sampleRate > 0 else {
             throw NSError(
-                domain: "Tabula",
+                domain: "Tape",
                 code: 1,
                 userInfo: [NSLocalizedDescriptionKey: "no audio input device available"]
             )

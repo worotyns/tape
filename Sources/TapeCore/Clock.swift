@@ -31,7 +31,7 @@ public final class SimClock: Clock {
     }
 
     public func iso(_ atMs: Double? = nil) -> String {
-        TabulaClockFormat.iso(atMs ?? now)
+        TapeClockFormat.iso(atMs ?? now)
     }
 }
 
@@ -46,11 +46,11 @@ public final class RealClock: Clock {
     }
 
     public func iso(_ atMs: Double? = nil) -> String {
-        TabulaClockFormat.iso(atMs ?? nowMs)
+        TapeClockFormat.iso(atMs ?? nowMs)
     }
 }
 
-enum TabulaClockFormat {
+enum TapeClockFormat {
     private static let formatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

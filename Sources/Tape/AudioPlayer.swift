@@ -1,6 +1,6 @@
 import AVFoundation
 import Foundation
-import TabulaCore
+import TapeCore
 
 /// Playback through the Mac's normal output, standing in for the bone
 /// conduction transducer. Sample-accurate seeking is the whole point: moving
@@ -84,6 +84,6 @@ final class AudioPlayer: AudioSink {
     }
 
     private func log(_ message: String) {
-        FileHandle.standardError.write(Data("tabula: \(message)\n".utf8))
+        FileHandle.standardError.write(Data("tape: \(message)\n".utf8))
     }
 }

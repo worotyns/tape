@@ -1,5 +1,5 @@
 import AppKit
-import TabulaCore
+import TapeCore
 
 /// The menu bar icon *is* the device's display. One coloured dot, four states:
 /// red = recording, green = playback, cyan = cue detent, magenta = scrub.
@@ -14,7 +14,7 @@ final class StatusLED {
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.imagePosition = .imageOnly
         item.button?.image = image(for: nil, alpha: 0.32)
-        item.button?.toolTip = "TABULA"
+        item.button?.toolTip = "TAPE"
     }
 
     var menu: NSMenu? {
@@ -50,9 +50,9 @@ final class StatusLED {
 
     private func tooltip(_ state: LedState) -> String {
         switch state.mode {
-        case .off: return "TABULA — idle"
+        case .off: return "TAPE — idle"
         case .steady, .flash, .blink:
-            return "TABULA — \(state.reason ?? state.mode.rawValue)"
+            return "TAPE — \(state.reason ?? state.mode.rawValue)"
         }
     }
 

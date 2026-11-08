@@ -21,7 +21,7 @@ public final class EventLog {
         let event = Event(
             seq: events.count + 1,
             simMs: atMs,
-            at: TabulaClockFormat.iso(atMs),
+            at: TapeClockFormat.iso(atMs),
             type: type,
             data: data
         )

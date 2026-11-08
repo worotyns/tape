@@ -1,5 +1,5 @@
 import XCTest
-@testable import TabulaCore
+@testable import TapeCore
 
 /// The shortcuts are the only interface the app has, so the parts that are easy
 /// to get silently wrong — the defaults, surviving an upgrade, and refusing a
@@ -7,7 +7,7 @@ import XCTest
 final class KeybindingsTests: XCTestCase {
 
     private var defaults: UserDefaults!
-    private let suite = "tabula.keybindings.tests"
+    private let suite = "tape.keybindings.tests"
 
     override func setUp() {
         super.setUp()

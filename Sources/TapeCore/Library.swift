@@ -1,7 +1,7 @@
 // The archive. A plain folder on disk, same layout as the simulator's microSD
 // card, so either implementation can read the other's recordings:
 //
-//   TABULA/
+//   TAPE/
 //     manifest.json
 //     events.jsonl
 //     recordings/rec_000001.wav
@@ -42,7 +42,7 @@ public struct LibraryManifest: Codable, Sendable {
             ?? (try? c.decode(String.self, forKey: .cardId))
             ?? "library"
         createdAt = (try? c.decode(String.self, forKey: .createdAt))
-            ?? TabulaClockFormat.iso(Date().timeIntervalSince1970 * 1000)
+            ?? TapeClockFormat.iso(Date().timeIntervalSince1970 * 1000)
         nextSeq = (try? c.decode(Int.self, forKey: .nextSeq)) ?? 1
     }
 
@@ -129,7 +129,7 @@ public final class Library {
                                withIntermediateDirectories: true)
         let manifest = LibraryManifest(
             libraryId: id ?? "library-\(Int(Date().timeIntervalSince1970 * 1000))",
-            createdAt: TabulaClockFormat.iso(Date().timeIntervalSince1970 * 1000),
+            createdAt: TapeClockFormat.iso(Date().timeIntervalSince1970 * 1000),
             nextSeq: 1
         )
         let lib = Library(root: root, manifest: manifest)
@@ -322,12 +322,12 @@ public final class Library {
                 id: id,
                 seq: Library.parseRecSeq(id),
                 createdAt: started[id]?["at"]?.stringValue
-                    ?? TabulaClockFormat.iso(started[id]?.simMs ?? Date().timeIntervalSince1970 * 1000)
+                    ?? TapeClockFormat.iso(started[id]?.simMs ?? Date().timeIntervalSince1970 * 1000)
             )
             meta.durationSamples = stats.durationSamples
             meta.sizeBytes = stats.sizeBytes
             meta.status = "finalized"
-            meta.finalizedAt = TabulaClockFormat.iso(Date().timeIntervalSince1970 * 1000)
+            meta.finalizedAt = TapeClockFormat.iso(Date().timeIntervalSince1970 * 1000)
             meta.recovered = true
             if meta.markers.isEmpty, let journaled = journaledMarkers[id] {
                 // A marker past the repaired end cannot exist (those bytes were
@@ -343,7 +343,7 @@ public final class Library {
             appendEvent(Event(
                 seq: readEvents().count + 1,
                 simMs: now,
-                at: TabulaClockFormat.iso(now),
+                at: TapeClockFormat.iso(now),
                 type: .recordingFinalized,
                 data: [
                     "id": .string(id),

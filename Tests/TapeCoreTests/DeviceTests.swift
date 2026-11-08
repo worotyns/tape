@@ -1,5 +1,5 @@
 import XCTest
-@testable import TabulaCore
+@testable import TapeCore
 
 /// A mic that cannot start, to exercise the rejection path.
 final class FailingMic: MicSource {
@@ -26,7 +26,7 @@ final class DeviceTests: XCTestCase {
 
         init(config: Config = Config(), withLibrary: Bool = true, failingMic: Bool = false) throws {
             dir = URL(fileURLWithPath: NSTemporaryDirectory())
-                .appendingPathComponent("tabula-test-\(UUID().uuidString)", isDirectory: true)
+                .appendingPathComponent("tape-test-\(UUID().uuidString)", isDirectory: true)
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             library = withLibrary ? try Library.create(at: dir, id: "test-library") : nil
             clock = SimClock()

@@ -1,4 +1,4 @@
-// TABULA device domain model, ported from the JS simulator with the hardware
+// TAPE device domain model, ported from the JS simulator with the hardware
 // removed. What is left is the concept:
 //
 //   * capture that never loses data (append-only, repairable, recoverable)

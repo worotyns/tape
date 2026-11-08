@@ -1,4 +1,4 @@
-# TABULA — ciągła pamięć nagrań
+# TAPE — ciągła pamięć nagrań
 
 Appka na Maca, która nagrywa głos i **nigdy nie zapomina**: jeden rosnący zapis,
 po którym chodzi się jak po taśmie. Bez plików do otwierania, bez kosza, bez
@@ -60,9 +60,9 @@ pierwszy rzut oka wyglądają na brak funkcji:
 ./scripts/install.sh          # buduje i instaluje do /Applications
 ```
 
-Albo **bez terminala:** dwuklik na `Install TABULA.command` w Finderze.
+Albo **bez terminala:** dwuklik na `Install TAPE.command` w Finderze.
 
-Po instalacji TABULA jest zwykłą appką: uruchamiasz ją z Findera, Spotlighcie
+Po instalacji TAPE jest zwykłą appką: uruchamiasz ją z Findera, Spotlighcie
 albo Launchpada. Nie ma ikony w Docku (jest akcesorium, `LSUIElement`) i nigdy
 nie przejmuje focusu — zamyka się z własnego menu w pasku.
 
@@ -70,14 +70,31 @@ nie przejmuje focusu — zamyka się z własnego menu w pasku.
 |---|---|
 | `--user` | instaluje do `~/Applications` zamiast do `/Applications` |
 | `--login` | dodaje `LaunchAgent`, żeby startowała przy logowaniu |
-| `--dmg` | buduje `dist/TABULA-0.1.dmg` (przeciągnij-do-Applications) |
+| `--dmg` | buduje `dist/TAPE-0.1.dmg` (przeciągnij-do-Applications) |
 | `--no-launch` | instaluje bez uruchamiania |
 | `--uninstall` | usuwa appkę i login item |
 
-`--uninstall` **nie rusza nagrań** — one żyją w `~/Documents/TABULA` i nic ich nie
+`--uninstall` **nie rusza nagrań** — one żyją w `~/Documents/TAPE` i nic ich nie
 kasuje, ani instalacja, ani odinstalowanie.
 
-### Uruchamianie z katalogu builda
+### Aktualizacja z TABULA
+
+Appka nazywała się TABULA. Pod nową nazwą dwie rzeczy przechodzą same, przy
+pierwszym uruchomieniu (`Sources/Tape/Rename.swift` to jedyne miejsce, które
+zna starą nazwę):
+
+- **archiwum** `~/Documents/TABULA` jest przenoszone do `~/Documents/TAPE` —
+  `rename`, nie kopiowanie i nie kasowanie: albo całe, albo wcale. Gdyby się nie
+  udało, appka czyta dalej stary folder, zamiast założyć obok pusty nowy,
+- **ustawienia** ze starej domeny preferencji (ścieżka archiwum, wzmocnienie,
+  skróty) są przepisywane do nowej, raz.
+
+Instalator sprząta przy okazji starą appkę i jej login item — inaczej zostałby
+w pasku drugi punkcik i wpis startujący ścieżkę, której już nie ma.
+
+Jedyny koszt: identyfikator bundla się zmienił, więc macOS traktuje TAPE jako
+nową appkę i **raz** zapyta ponownie o mikrofon — przy pierwszym nagraniu.
+Nagrania i skróty zostają.
 
 ```bash
 ./scripts/run.sh              # build release + .app + launch
@@ -96,8 +113,8 @@ gorsze). Instalator ostrzega, gdy update zmieni sygnaturę. Stała tożsamość
 usuwa problem na zawsze:
 
 1. Keychain Access › Certificate Assistant › Create a Certificate
-2. nazwa `TABULA Dev`, Identity Type `Self Signed Root`, Certificate Type `Code Signing`
-3. `TABULA_SIGN_IDENTITY="TABULA Dev" ./scripts/install.sh`
+2. nazwa `TAPE Dev`, Identity Type `Self Signed Root`, Certificate Type `Code Signing`
+3. `TAPE_SIGN_IDENTITY="TAPE Dev" ./scripts/install.sh`
 
 Alternatywnie darmowy certyfikat „Apple Development" z Xcode (personal team).
 
@@ -133,7 +150,7 @@ przewijanie w bieżącym nagraniu.
    właśnie nagrałeś — jak głowica magnetofonu. Wcześniej po `⌃⌥R`/stopie pierwsze
    naciśnięcie `⌃⌥↓` odtwarzało stary klip i wyglądało jak zepsuta nawigacja.
 
-Mapa cue jest do podejrzenia bez GUI: `Tabula --inspect` wypisuje całą listę w
+Mapa cue jest do podejrzenia bez GUI: `Tape --inspect` wypisuje całą listę w
 kolejności.
 
 Globalne skróty rejestruje Carbon `RegisterEventHotKey`: **nie wymaga**
@@ -151,7 +168,7 @@ z nimi nawigacji. Preferencje zbierają to, co wcześniej było podmenu:
   `+` dodaje alternatywę, `×` usuwa. Na czas nagrywania skrótu globalne skróty są
   chwilowo wyrejestrowane, inaczej Carbon połknąłby właśnie wciskaną kombinację.
   Kolizje są odrzucane z komunikatem.
-- **Launch TABULA at login** — ta sama `LaunchAgent`, którą pisze
+- **Launch TAPE at login** — ta sama `LaunchAgent`, którą pisze
   `install.sh --login`, więc checkbox i instalator nie mogą się rozjechać.
 - **Archive** — ścieżka archiwum, „Open recording folder” i „Change…”.
 - **Microphone** — wzmocnienie i podgląd poziomu.
@@ -185,11 +202,11 @@ na dysku z `--dmg` i w Get Info; `.icns` nie jest w repo, bo dorysowuje go
 
 ## Taśma na dysku
 
-Domyślnie `~/Documents/TABULA/` (albo inna ścieżka wskazana z menu — wtedy
+Domyślnie `~/Documents/TAPE/` (albo inna ścieżka wskazana z menu — wtedy
 zapamiętana). Archiwum to zwykłe pliki, które przeżyją appkę:
 
 ```
-TABULA/
+TAPE/
   manifest.json                 # formatVersion, cardId (tożsamość archiwum), nextSeq
   events.jsonl                  # dziennik zdarzeń, append-only
   recordings/rec_000001.wav     # PCM mono 16 kHz s16le
@@ -202,7 +219,7 @@ wskazać inną ścieżkę (zapisywaną w preferencjach). Do jednorazowego testu 
 zapisu służy flaga:
 
 ```bash
-.build/Tabula.app/Contents/MacOS/Tabula -libraryPath /tmp/tabula-test
+.build/Tape.app/Contents/MacOS/Tape -libraryPath /tmp/tape-test
 ```
 
 ## Trwałość — co jest sprawdzone
@@ -229,9 +246,9 @@ po zabiciu procesu — nie ma martwego locka po crashu.
 ```bash
 swift test                          # 37 testów domeny i skrótów, headless
 ./scripts/run.sh --no-open
-BIN="$(swift build -c release --show-bin-path)/Tabula"
+BIN="$(swift build -c release --show-bin-path)/Tape"
 "$BIN" --selftest                   # potok end-to-end prawdziwym binarium
-"$BIN" --inspect                    # co jest w archiwum (domyślnie ~/Documents/TABULA)
+"$BIN" --inspect                    # co jest w archiwum (domyślnie ~/Documents/TAPE)
 ```
 
 `--selftest` przechodzi cały potok: nagranie → marker → zabity proces w trakcie
@@ -249,22 +266,23 @@ rec_000002  0:13  ⚑2  406 KB   peak 37.7%  rms 2.52%  real audio
 ## Struktura
 
 ```
-Sources/TabulaCore/     domena: bez AppKit, bez CoreAudio, bez filesystemu
+Sources/TapeCore/     domena: bez AppKit, bez CoreAudio, bez filesystemu
   Device.swift          maszyna stanów, cue, markery, odsłuch, MEM
   Library.swift         archiwum, manifest, dziennik, recovery, repairWav
   Audio.swift           strumieniowy zapis WAV, analiza PCM, syntetyczny sygnał
   Keybindings.swift     akcje, kombinacje, defaults, scalanie przy upgrade, kolizje
   Protocols.swift       MicSource / AudioSink / Clock — granice wymienne
-Sources/Tabula/         AppKit + CoreAudio: StatusLED, HotKeys, MicCapture,
+Sources/Tape/         AppKit + CoreAudio: StatusLED, HotKeys, MicCapture,
                         AudioPlayer, ToneFeedback, PreferencesWindow,
                         AppDelegate, SelfTest, Inspector
-Tests/TabulaCoreTests/  37 testów domeny (stan, cue, zapis, recovery) i skrótów
+  Rename.swift          jednorazowe przejęcie archiwum i ustawień po TABULA
+Tests/TapeCoreTests/  37 testów domeny (stan, cue, zapis, recovery) i skrótów
 scripts/                install.sh · make-app.sh · run.sh · make-icon.swift
 ```
 
 Rdzeń nie zna AppKitu ani CoreAudio: cała logika — maszyna stanów, kursor po
-cue, zapis i recovery — siedzi w `TabulaCore` i jest testowana bez UI. Warstwa
-`Sources/Tabula/` to tylko wejście i wyjście: mikrofon, odtwarzanie, skróty,
+cue, zapis i recovery — siedzi w `TapeCore` i jest testowana bez UI. Warstwa
+`Sources/Tape/` to tylko wejście i wyjście: mikrofon, odtwarzanie, skróty,
 pasek systemu.
 
 ## Znane ograniczenia i następne kroki
@@ -276,7 +294,7 @@ pasek systemu.
 - **Bez podpisywania** — przy ad-hoc sygnaturze zmienia się cdhash, więc TCC
   może pytać o mikrofon po każdym rebuildzie. Lekarstwo: darmowy certyfikat
   „Apple Development" (personal team) i
-  `TABULA_SIGN_IDENTITY="Apple Development: …" ./scripts/run.sh`.
+  `TAPE_SIGN_IDENTITY="Apple Development: …" ./scripts/run.sh`.
 - **Login item to `LaunchAgent`** — checkbox w Preferencjach (i `install.sh
   --login`) piszą plist do `~/Library/LaunchAgents`; `SMAppService` wymagałby
   stabilnej sygnatury.

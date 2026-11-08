@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Build and assemble Tabula.app. Prints the bundle path on stdout; all build
+# Build and assemble Tape.app. Prints the bundle path on stdout; all build
 # noise goes to stderr, so callers can do APP="$(make-app.sh)".
 #
 #   ./scripts/make-app.sh [debug|release]
@@ -12,13 +12,13 @@ cd "$(dirname "$0")/.."
 CONFIG="${1:-release}"
 
 echo "building ($CONFIG)…" >&2
-swift build -c "$CONFIG" --product Tabula >&2
+swift build -c "$CONFIG" --product Tape >&2
 BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
 
-APP="$PWD/.build/Tabula.app"
+APP="$PWD/.build/Tape.app"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN_DIR/Tabula" "$APP/Contents/MacOS/Tabula"
+cp "$BIN_DIR/Tape" "$APP/Contents/MacOS/Tape"
 cp Info.plist "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 
@@ -37,9 +37,10 @@ cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"
 # certificate from Keychain Access, or a free personal-team "Apple Development"
 # certificate, both work:
 #
-#   TABULA_SIGN_IDENTITY="TABULA Dev" ./scripts/install.sh
+#   TAPE_SIGN_IDENTITY="TAPE Dev" ./scripts/install.sh
 #
-SIGN_IDENTITY="${TABULA_SIGN_IDENTITY:--}"
+# TAPE_SIGN_IDENTITY, with the pre-rename TABULA_SIGN_IDENTITY still honoured.
+SIGN_IDENTITY="${TAPE_SIGN_IDENTITY:-${TABULA_SIGN_IDENTITY:--}}"
 if codesign --force --sign "$SIGN_IDENTITY" "$APP" >/dev/null 2>&1; then
   echo "signed with: $SIGN_IDENTITY" >&2
 else
