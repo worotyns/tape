@@ -14,9 +14,8 @@ enum Inspector {
         if let path = arguments.dropFirst().first, !path.hasPrefix("-") {
             root = URL(fileURLWithPath: path, isDirectory: true)
         } else {
-            // Read-only, and no migration: inspecting an archive must not move
-            // one. `Rename` only says where it would be.
-            root = Rename.defaultArchiveURL()
+            root = URL(fileURLWithPath: NSHomeDirectory())
+                .appendingPathComponent("Documents/TAPE", isDirectory: true)
         }
 
         guard let library = try? Library.open(at: root) else {

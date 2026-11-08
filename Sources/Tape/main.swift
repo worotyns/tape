@@ -25,10 +25,6 @@ if arguments.contains("--help") {
     exit(0)
 }
 
-// Before the delegate exists: it reads preferences and the archive path in its
-// property initialisers, and the rename migration has to land first.
-Rename.migrate()
-
 let delegate = AppDelegate()
 let application = NSApplication.shared
 application.delegate = delegate

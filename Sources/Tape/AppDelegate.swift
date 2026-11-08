@@ -46,7 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         if let saved = UserDefaults.standard.string(forKey: "libraryPath") {
             return URL(fileURLWithPath: saved, isDirectory: true)
         }
-        return Rename.defaultArchiveURL()
+        let base = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSHomeDirectory())
+        return base.appendingPathComponent("TAPE", isDirectory: true)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
